@@ -6,6 +6,7 @@
     <groupId>com.tyrival</groupId>
     <artifactId>springboot-dubbo-sample</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <!-- 必须修改为pom -->
     <packaging>pom</packaging>
 
     <name>springboot-dubbo-sample</name>
@@ -15,7 +16,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.0.3.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
 
     <properties>
@@ -28,7 +29,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
-            <!-- log4j依赖不全，排除 -->
+            <!-- spring boot2.0的log4j依赖不全，排除，否则会报错 -->
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -40,7 +41,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <!-- log4j依赖不全，排除 -->
+            <!-- spring boot2.0的log4j依赖不全，排除，否则会报错 -->
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -99,7 +100,7 @@
 
     </dependencies>
 
-
+    <!-- 引入各模块 -->
     <modules>
         <module>user</module>
         <module>redis</module>
@@ -107,21 +108,19 @@
         <module>common</module>
     </modules>
 
+    <!-- 管理Maven编译参数 -->
+    <!-- 在编译时，通过增加参数" -P 环境参数"，会根据参数加载不同配置 -->
+    <!-- 例如："-P dev"表示调用开发环境配置 -->
     <profiles>
         <profile>
             <id>dev</id>
             <properties>
                 <profileActive>dev</profileActive>
             </properties>
+            <!-- 不加任何参数时，默认调用dev环境配置 -->
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-        </profile>
-        <profile>
-            <id>test</id>
-            <properties>
-                <profileActive>test</profileActive>
-            </properties>
         </profile>
         <profile>
             <id>prod</id>
@@ -131,23 +130,28 @@
         </profile>
     </profiles>
 
+    <!-- Maven编译配置 -->
     <build>
+        <!-- 配置资源文件 -->
         <resources>
             <resource>
+                <!-- 配置资源目录 -->
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <!-- 排除所有资源文件 -->
                 <excludes>
                     <exclude>application.properties</exclude>
                     <exclude>application-dev.properties</exclude>
-                    <exclude>application-test.properties</exclude>
                     <exclude>application-prod.properties</exclude>
                 </excludes>
             </resource>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <!-- 标识构建时所需要的配置文件 -->
                 <includes>
                     <include>application.properties</include>
+                    <!-- ${profileActive}这个值会在maven构建时传入 -->
                     <include>application-${profileActive}.properties</include>
                 </includes>
             </resource>
@@ -171,7 +175,7 @@
                     <configuration>
                         <type>runtime</type>
                         <cargo.remote.username>admin</cargo.remote.username>
-                        <cargo.remote.password>jishimen2019</cargo.remote.password>
+                        <cargo.remote.password>password</cargo.remote.password>
                     </configuration>
                 </configuration>
                 <executions>
@@ -183,6 +187,7 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- 添加插件maven-resources-plugin，maven构建时替换参数 -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.0.2</version>
