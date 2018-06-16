@@ -20,14 +20,16 @@ Initializr Service Url: 默认 https://start.spring.io
 Group: com.tyrival
 Arfifact: springboot-dubbo-sample
 Type: Maven Project
-其余选项保持自动生成的值
+
+其余项目保持自动生成的值
 ```
 
 点Next，进入Dependencies，由于工程本身不开发任何代码，只用于管理maven信息，从而提供给各模块进行继承，所以不选择任何依赖包，直接点Next，然后填写信息
 
 ```
 Project name: springboot-dubbo-sample  // 与Project Metadata保持一致
-其余选项保持自动生成的值
+
+其余项目保持自动生成的值
 ```
 
 点击Finish，工程创建成功，如果默认生成了src、.mvn、mvnw、mvnw.cmd等文件，将其全部删除。
@@ -49,14 +51,16 @@ Initializr Service Url: 默认 https://start.spring.io
 Group: com.tyrival
 Arfifact: common
 Type: Maven Project
-其余选项保持自动生成的值
+
+其余项目保持自动生成的值
 ```
 
 点Next，进入Dependencies，不选择任何依赖包，直接点Next，然后填写信息
 
 ```
 Module name: common  // 与Project Metadata保持一致
-其余选项保持自动生成的值
+
+其余项目保持自动生成的值
 ```
 
 点击Finish，模块创建完成，并用相同的方式创建controller、redis、user模块。
@@ -65,7 +69,7 @@ Module name: common  // 与Project Metadata保持一致
 
 ### 2.3 pom.xml
 
-#### 2.3.1 项目的根pom.xml：
+#### 2.3.1 项目的根pom.xml
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -76,6 +80,7 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>springboot-dubbo-sample</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    
     <!-- 必须修改为pom -->
     <packaging>pom</packaging>
 
@@ -170,7 +175,7 @@ Module name: common  // 与Project Metadata保持一致
 
     </dependencies>
 
-	<!-- 指定工程包括的子模块 -->
+    <!-- 指定工程包括的子模块 -->
     <modules>
         <module>user</module>
         <module>redis</module>
@@ -178,9 +183,9 @@ Module name: common  // 与Project Metadata保持一致
         <module>common</module>
     </modules>
 
-	<!-- 管理Maven编译参数 -->
-	<!-- 在编译时，通过增加参数" -P 环境参数"，会根据参数加载不同配置 -->
-	<!-- 例如："-P dev"表示调用开发环境配置 -->
+    <!-- 管理Maven编译参数 -->
+    <!-- 在编译时，通过增加参数" -P 环境参数"，会根据参数加载不同配置 -->
+    <!-- 例如："-P dev"表示调用开发环境配置 -->
     <profiles>
         <profile>
             <id>dev</id>
@@ -200,15 +205,15 @@ Module name: common  // 与Project Metadata保持一致
         </profile>
     </profiles>
 
-	<!-- Maven编译配置 -->
+    <!-- Maven编译配置 -->
     <build>
-		<!-- 配置资源文件 -->
+        <!-- 配置资源文件 -->
         <resources>
             <resource>
-				<!-- 配置资源目录 -->
+                <!-- 配置资源目录 -->
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-				<!-- 排除所有资源文件 -->
+                <!-- 排除所有资源文件 -->
                 <excludes>
                     <exclude>application.properties</exclude>
                     <exclude>application-dev.properties</exclude>
@@ -218,10 +223,10 @@ Module name: common  // 与Project Metadata保持一致
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-				<!-- 标识构建时所需要的配置文件 -->
+                <!-- 标识构建时所需要的配置文件 -->
                 <includes>
                     <include>application.properties</include>
-					<!-- ${profileActive}这个值会在maven构建时传入 -->
+                    <!-- ${profileActive}这个值会在maven构建时传入 -->
                     <include>application-${profileActive}.properties</include>
                 </includes>
             </resource>
@@ -257,7 +262,7 @@ Module name: common  // 与Project Metadata保持一致
                     </execution>
                 </executions>
             </plugin>
-           <!-- 添加插件maven-resources-plugin，maven构建时替换参数 -->
+            <!-- 添加插件maven-resources-plugin，maven构建时替换参数 -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.0.2</version>
@@ -287,18 +292,19 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>common</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-	<!-- common模块作为所有模块的依赖，编译为jar -->
+    
+    <!-- common模块作为所有模块的依赖，编译为jar -->
     <packaging>jar</packaging>
 
     <name>common</name>
     <description>Demo project for Spring Boot</description>
 
-	<!-- 独立模块，依赖于spring boot，与其他模块不同 -->
+    <!-- 独立模块，依赖于spring boot，与其他模块不同 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.0.3.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
 
     <properties>
@@ -319,7 +325,7 @@ Module name: common  // 与Project Metadata保持一致
             <scope>test</scope>
         </dependency>
 		
-		<!-- 用到Mybatis的TypeHandler，所以引入Mybatis依赖 -->
+        <!-- 用到Mybatis的TypeHandler，所以引入Mybatis依赖 -->
         <dependency>
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>
@@ -343,13 +349,14 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>controller</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    
     <!-- 用Tomcat容器运行，修改为war -->
     <packaging>war</packaging>
 
     <name>controller</name>
     <description>Demo project for Spring Boot</description>
 
-	<!-- 继承项目的根pom -->
+    <!-- 继承项目的根pom -->
     <parent>
         <groupId>com.tyrival</groupId>
         <artifactId>springboot-dubbo-sample</artifactId>
@@ -373,13 +380,14 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>user</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    
     <!-- 用Tomcat容器运行，修改为war -->
     <packaging>war</packaging>
 
     <name>user</name>
     <description>Demo project for Spring Boot</description>
 
-	<!-- 继承项目的根pom -->
+    <!-- 继承项目的根pom -->
     <parent>
         <groupId>com.tyrival</groupId>
         <artifactId>springboot-dubbo-sample</artifactId>
@@ -387,7 +395,7 @@ Module name: common  // 与Project Metadata保持一致
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-	<!-- 除了继承根pom的依赖，还用需要集成Mybatis框架，并支持Mybatis和PostgreSQL数据库 -->
+    <!-- 除了继承根pom的依赖，还用需要集成Mybatis框架，并支持Mybatis和PostgreSQL数据库 -->
     <dependencies>
 
         <!-- MyBatis -->
@@ -429,13 +437,14 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>redis</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    
     <!-- 用Tomcat容器运行，修改为war -->
     <packaging>war</packaging>
 
     <name>redis</name>
     <description>Demo project for Spring Boot</description>
 
-	<!-- 继承项目的根pom -->
+    <!-- 继承项目的根pom -->
     <parent>
         <groupId>com.tyrival</groupId>
         <artifactId>springboot-dubbo-sample</artifactId>
@@ -458,7 +467,7 @@ Module name: common  // 与Project Metadata保持一致
             <version>2.5.0</version>
         </dependency>
 
-		<!-- FastJSON -->
+        <!-- FastJSON -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
@@ -484,7 +493,7 @@ common作为其他所有模块的依赖，主要功能是声明各模块通用�
 
 user是一个以用户管理为示例开发的模块，主要负责向外提供UserService服务的实现，并与数据库进行用户信息的交换，下面列举部分主要源码。
 
-- `com.tyrival.user.UserApplication`
+- com.tyrival.user.UserApplication
 
 ```java
 import org.springframework.boot.SpringApplication;
@@ -508,7 +517,7 @@ public class UserApplication extends SpringBootServletInitializer {
 
 
 
-- `com.tyrival.user.service.UserServiceImpl`
+- com.tyrival.user.service.UserServiceImpl
 
 ```java
 import com.alibaba.dubbo.config.annotation.Service;
@@ -547,7 +556,7 @@ public class UserServiceImpl implements UserService {
 
 
 
-- `src/main/resources/application.properties`
+- src/main/resources/application.properties
 
 ```
 ## 通用配置文件，任何环境都要用到的配置在此处
@@ -562,7 +571,7 @@ mybatis.mapper-locations=classpath:mybatis/mapper/*.xml
 
 
 
-- `src/main/resources/application-dev.properties`
+- src/main/resources/application-dev.properties
 
 ```
 ## dev开发环境下特有的配置记录在此
@@ -590,13 +599,13 @@ spring.dubbo.scan=com.tyrival.user.service
 
 #### 2.4.3 controller
 
-controller模块主要负责调用user模块发布的RPC服务，然后通过http协议对外提供服务。
+controller模块主要负责调用user模块发布的RPC服务，然后通过http协议对外提供服务。类似user模块，具体参考源码。
 
 
 
 #### 2.4.4 redis
 
-redis模块主要负责与redis服务器进行数据交互
+redis模块主要负责与redis服务器进行数据交互。类似user模块，具体参考源码。
 
 
 
