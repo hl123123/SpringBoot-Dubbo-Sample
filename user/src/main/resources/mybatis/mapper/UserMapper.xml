@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tyrival.user.dao.UserDAO" >
+
+    <resultMap id="userResultMap" type="com.tyrival.entity.user.User">
+        <result property="id" column="id"/>
+        <result property="account" column="account"/>
+        <result property="password" column="password"/>
+        <result property="userStateEnum" column="user_state" typeHandler="com.tyrival.typehandler.EnumTypeHandler"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO users (id, account, password, phone, user_state)
+        VALUES (#{id}, #{account}, #{password}, #{userStateEnum.code})
+    </insert>
+
+    <select id="find" resultMap="userResultMap">
+      SELECT *
+      FROM user
+    </select>
+
+
+</mapper>
