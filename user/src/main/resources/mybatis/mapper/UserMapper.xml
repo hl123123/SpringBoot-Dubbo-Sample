@@ -17,7 +17,7 @@
 
     <select id="find" resultMap="userResultMap">
       SELECT *
-      FROM user
+      FROM users
     </select>
 
 

@@ -35,6 +35,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> list(QueryParam queryParam) {
-        return userDAO.find(queryParam);
+        List<User> list = userDAO.find(queryParam);
+        return list;
     }
 }
