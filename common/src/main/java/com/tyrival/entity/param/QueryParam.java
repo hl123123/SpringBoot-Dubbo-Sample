@@ -19,6 +19,7 @@ public class QueryParam implements Serializable {
     private Map<String, Object> conditions;
 
     public QueryParam() {
+        this.page = new Page();
         this.conditions = new HashMap<String, Object>();
     }
 

@@ -33,14 +33,27 @@ public interface UserController {
     Result create(HttpServletRequest httpReq, HttpServletResponse httpRsp, User user);
 
     /**
-     * 登出
+     * 查询
      * @param httpReq HTTP请求
      * @param httpRsp HTTP响应
+     * @param param 查询参数
      * @return 查询用户列表的结果
      */
     @GetMapping("/list")
     @Login
     @Permission("user:query")
     Result<List<User>> list(HttpServletRequest httpReq, HttpServletResponse httpRsp, QueryParam param);
+
+    /**
+     * 分页查询
+     * @param httpReq HTTP请求
+     * @param httpRsp HTTP响应
+     * @param param 查询参数
+     * @return 查询用户列表的结果
+     */
+    @GetMapping("/list_by_page")
+    @Login
+    @Permission("user:query")
+    Result<List<User>> listByPage(HttpServletRequest httpReq, HttpServletResponse httpRsp, QueryParam param);
 
 }

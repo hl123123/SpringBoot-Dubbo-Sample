@@ -6,6 +6,8 @@
     <groupId>com.tyrival</groupId>
     <artifactId>common</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+
+    <!-- common模块作为所有模块的依赖，编译为jar -->
     <packaging>jar</packaging>
 
     <name>common</name>

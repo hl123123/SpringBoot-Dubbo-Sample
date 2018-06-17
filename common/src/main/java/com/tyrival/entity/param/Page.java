@@ -1,5 +1,7 @@
 package com.tyrival.entity.param;
 
+import java.io.Serializable;
+
 /**
  * @Description:
  * @Author: Zhou Chenyu
@@ -9,7 +11,7 @@ package com.tyrival.entity.param;
  * @Modified Date:
  * @Why:
  */
-public class Page {
+public class Page implements Serializable {
 
     /** 默认每页显示记录数 */
     private static final int DEFAULT_PAGE_SIZE = 10;
@@ -25,8 +27,8 @@ public class Page {
 
     public Page() {
         this.pageSize = DEFAULT_PAGE_SIZE;
-        this.pageIndex = 0;
-        this.pageCount = 0;
+        this.pageIndex = 1;
+        this.pageCount = 1;
         this.totalCount = 0;
     }
 
@@ -69,18 +71,22 @@ public class Page {
             this.pageSize = 10;
         }
         this.pageCount = (int) Math.ceil(this.totalCount * 1.0 / this.pageSize);
-        if (this.pageCount <= this.pageIndex) {
-            this.pageIndex = 0;
+        if (this.pageCount == 0) {
+            this.pageCount = 1;
+        }
+        if (this.pageCount < this.pageIndex) {
+            this.pageIndex = 1;
         }
     }
 
     @Override
     public String toString(){
         StringBuilder builder = new StringBuilder().
-                append("Page [pageIndex=").append(pageIndex).
+                append("Page { pageIndex=").append(pageIndex).
                 append(", pageSize=").append(pageSize)
-                .append(", totalCount=").append(totalCount < 0 ? "null" : totalCount)
-                .append(", pageCount=").append(pageCount < 0 ? "null" : pageCount);
+                .append(", totalCount=").append(totalCount)
+                .append(", pageCount=").append(pageCount)
+                .append(" }");
         return builder.toString();
     }
 }

@@ -1,7 +1,7 @@
 # 基于Spring Boot、Dubbo、Redis、Mybtis搭建分布式开发项目
 
 ## 1. 概述
-本文从零开始，讲述基于Spring Boot、Dubbo搭建一个分布式开发项目，并集成Redis和Mybatis的所有步骤。
+本文从零开始，讲述基于Spring Boot、Dubbo搭建一个分布式开发项目，并集成Redis、Mybatis及其分页插件PageHelper的所有步骤。
 文中所用的IDE为Intellij IDEA，JDK版本为1.8
 
 ## 2. 步骤
@@ -80,7 +80,7 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>springboot-dubbo-sample</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    
+
     <!-- 必须修改为pom -->
     <packaging>pom</packaging>
 
@@ -135,7 +135,21 @@ Module name: common  // 与Project Metadata保持一致
         <dependency>
             <groupId>io.dubbo.springboot</groupId>
             <artifactId>spring-boot-starter-dubbo</artifactId>
+            <exclusions>
+                <!-- 排除javassist-3.15.0-GA并升级，否则用lambda，会报invalid constant type: 18 -->
+                <exclusion>
+                    <groupId>org.javassist</groupId>
+                    <artifactId>javassist</artifactId>
+                </exclusion>
+            </exclusions>
             <version>1.0.0</version>
+        </dependency>
+
+        <!-- Javassist -->
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.18.2-GA</version>
         </dependency>
 
         <!-- common -->
@@ -175,7 +189,7 @@ Module name: common  // 与Project Metadata保持一致
 
     </dependencies>
 
-    <!-- 指定工程包括的子模块 -->
+    <!-- 引入各模块 -->
     <modules>
         <module>user</module>
         <module>redis</module>
@@ -292,19 +306,18 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>common</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    
+
     <!-- common模块作为所有模块的依赖，编译为jar -->
     <packaging>jar</packaging>
 
     <name>common</name>
     <description>Demo project for Spring Boot</description>
 
-    <!-- 独立模块，依赖于spring boot，与其他模块不同 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.0.3.RELEASE</version>
-        <relativePath/>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <properties>
@@ -324,8 +337,7 @@ Module name: common  // 与Project Metadata保持一致
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-		
-        <!-- 用到Mybatis的TypeHandler，所以引入Mybatis依赖 -->
+
         <dependency>
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>
@@ -349,14 +361,13 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>controller</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    
-    <!-- 用Tomcat容器运行，修改为war -->
+
+    <!-- 修改为war -->
     <packaging>war</packaging>
 
     <name>controller</name>
     <description>Demo project for Spring Boot</description>
 
-    <!-- 继承项目的根pom -->
     <parent>
         <groupId>com.tyrival</groupId>
         <artifactId>springboot-dubbo-sample</artifactId>
@@ -380,14 +391,13 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>user</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    
-    <!-- 用Tomcat容器运行，修改为war -->
+
+    <!-- 修改为war -->
     <packaging>war</packaging>
 
     <name>user</name>
     <description>Demo project for Spring Boot</description>
 
-    <!-- 继承项目的根pom -->
     <parent>
         <groupId>com.tyrival</groupId>
         <artifactId>springboot-dubbo-sample</artifactId>
@@ -395,7 +405,6 @@ Module name: common  // 与Project Metadata保持一致
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <!-- 除了继承根pom的依赖，还用需要集成Mybatis框架，并支持Mybatis和PostgreSQL数据库 -->
     <dependencies>
 
         <!-- MyBatis -->
@@ -403,6 +412,13 @@ Module name: common  // 与Project Metadata保持一致
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>
             <version>1.3.1</version>
+        </dependency>
+
+        <!-- PageHelper -->
+        <dependency>
+            <groupId>com.github.pagehelper</groupId>
+            <artifactId>pagehelper-spring-boot-starter</artifactId>
+            <version>1.2.3</version>
         </dependency>
 
         <!-- Mysql -->
@@ -437,14 +453,13 @@ Module name: common  // 与Project Metadata保持一致
     <groupId>com.tyrival</groupId>
     <artifactId>redis</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    
-    <!-- 用Tomcat容器运行，修改为war -->
+
+    <!-- 修改为war -->
     <packaging>war</packaging>
 
     <name>redis</name>
     <description>Demo project for Spring Boot</description>
 
-    <!-- 继承项目的根pom -->
     <parent>
         <groupId>com.tyrival</groupId>
         <artifactId>springboot-dubbo-sample</artifactId>
@@ -460,14 +475,13 @@ Module name: common  // 与Project Metadata保持一致
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- spring boot2.0集成redis所需的common-pool2 -->
+        <!-- spring2.0 集成 redis 所需 common-pool2 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
             <version>2.5.0</version>
         </dependency>
 
-        <!-- FastJSON -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
@@ -521,6 +535,9 @@ public class UserApplication extends SpringBootServletInitializer {
 
 ```java
 import com.alibaba.dubbo.config.annotation.Service;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.tyrival.entity.base.PageResult;
 import com.tyrival.entity.param.QueryParam;
 import com.tyrival.entity.user.User;
 import com.tyrival.common.user.UserService;
@@ -549,6 +566,16 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> list(QueryParam queryParam) {
         return userDAO.find(queryParam);
+    }
+
+    @Override
+    public PageResult listByPage(QueryParam queryParam) {
+        PageInfo pageInfo = PageHelper.startPage(1, 10)
+                .doSelectPageInfo(() -> userDAO.find(queryParam));
+        long totalCount = pageInfo.getTotal();
+        queryParam.getPage().setTotalCount(totalCount);
+        PageResult result = new PageResult(pageInfo.getList(), queryParam.getPage());
+        return result;
     }
 }
 

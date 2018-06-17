@@ -6,6 +6,8 @@
     <groupId>com.tyrival</groupId>
     <artifactId>redis</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+
+    <!-- 修改为war -->
     <packaging>war</packaging>
 
     <name>redis</name>
@@ -40,6 +42,5 @@
         </dependency>
 
     </dependencies>
-
 
 </project>

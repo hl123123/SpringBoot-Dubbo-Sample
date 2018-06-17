@@ -3,6 +3,7 @@ package com.tyrival.entity.base;
 import com.tyrival.entity.param.Page;
 import com.tyrival.exception.CommonException;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,7 +16,7 @@ import java.util.Map;
  * @Modified Date:
  * @Why:
  */
-public class Result<T> {
+public class Result<T> implements Serializable {
     private Boolean success;
 
     private String errorCode;
@@ -31,14 +32,6 @@ public class Result<T> {
     public Result(T data) {
         this.success = true;
         this.data = data;
-    }
-
-    public Result(T data, Page page) {
-        this.success = true;
-        Map map = new HashMap<>();
-        map.put("list", data);
-        map.put("page", page);
-        this.data = (T) map;
     }
 
     public Result(CommonException exception) {

@@ -1,6 +1,9 @@
 package com.tyrival.user.service;
 
 import com.alibaba.dubbo.config.annotation.Service;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.tyrival.entity.base.PageResult;
 import com.tyrival.entity.param.QueryParam;
 import com.tyrival.entity.user.User;
 import com.tyrival.common.user.UserService;
@@ -37,5 +40,15 @@ public class UserServiceImpl implements UserService {
     public List<User> list(QueryParam queryParam) {
         List<User> list = userDAO.find(queryParam);
         return list;
+    }
+
+    @Override
+    public PageResult listByPage(QueryParam queryParam) {
+        PageInfo pageInfo = PageHelper.startPage(1, 10)
+                .doSelectPageInfo(() -> userDAO.find(queryParam));
+        long totalCount = pageInfo.getTotal();
+        queryParam.getPage().setTotalCount(totalCount);
+        PageResult result = new PageResult(pageInfo.getList(), queryParam.getPage());
+        return result;
     }
 }

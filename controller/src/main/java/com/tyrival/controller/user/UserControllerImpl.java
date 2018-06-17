@@ -46,7 +46,13 @@ public class UserControllerImpl implements UserController {
     @Override
     public Result list(HttpServletRequest request, HttpServletResponse response, QueryParam queryParam) {
         List<User> list = userService.list(queryParam);
-        return new Result(list, queryParam.getPage());
+        return new Result(list);
+    }
+
+    @Override
+    public Result listByPage(HttpServletRequest httpReq, HttpServletResponse httpRsp, QueryParam queryParam) {
+        PageResult result = userService.listByPage(queryParam);
+        return new Result(result);
     }
 
 }

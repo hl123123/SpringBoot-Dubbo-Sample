@@ -1,5 +1,6 @@
 package com.tyrival.common.user;
 
+import com.tyrival.entity.base.PageResult;
 import com.tyrival.entity.param.QueryParam;
 import com.tyrival.entity.user.User;
 
@@ -29,4 +30,11 @@ public interface UserService {
      * @return
      */
     List<User> list(QueryParam queryParam);
+
+    /**
+     * 分页查询/过滤用户列表
+     * @param queryParam
+     * @return
+     */
+    PageResult listByPage(QueryParam queryParam);
 }
