@@ -1,11 +1,11 @@
-package com.tyrival.annotation;
+package com.tyrival.controller.annotation;
 
 import java.lang.annotation.*;
 
 /**
- * @Description: 用在Controller层的接口上，表示访问该接口所需的角色
+ * @Description: 通过AOP记录日志的注解
  * @Author: Zhou Chenyu
- * @Date: 2018/6/15
+ * @Date: 2018/6/23
  * @Version: V1.0
  * @Modified By:
  * @Modified Date:
@@ -14,6 +14,6 @@ import java.lang.annotation.*;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Role {
-    public String value();
+public @interface Log {
+    String value();
 }

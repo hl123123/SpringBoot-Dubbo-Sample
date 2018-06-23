@@ -24,11 +24,12 @@ public enum ExceptionEnum implements Serializable {
     NO_REPEAT(COMMON_EXP_PREFIX + "003", "请勿重复提交"),
     SESSION_NULL(COMMON_EXP_PREFIX + "004", "请求头中SessionId不存在"),
     HTTP_REQ_METHOD_ERROR(COMMON_EXP_PREFIX + "005", "HTTP请求方法不正确"),
-    JSONERROR(COMMON_EXP_PREFIX + "006", "JSON解析异常"),
+    JSON_ERROR(COMMON_EXP_PREFIX + "006", "JSON解析异常"),
+    NO_PERMISSION(COMMON_EXP_PREFIX + "007", "当前用户无此操作权限"),
 
     /** User模块异常 */
-    USERNAME_NULL(USER_EXP_PREFIX + "000", "用户名为空"),
-    PASSWD_NULL(USER_EXP_PREFIX + "001", "密码为空");
+    ACCOUNT_NULL(USER_EXP_PREFIX + "000", "用户名为空"),
+    PASSWORD_NULL(USER_EXP_PREFIX + "001", "密码为空");
 
     private String code;
     private String message;

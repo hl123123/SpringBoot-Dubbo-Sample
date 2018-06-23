@@ -1,4 +1,4 @@
-package com.tyrival.enums;
+package com.tyrival.enums.base;
 
 /**
  * @Description:
@@ -10,10 +10,10 @@ package com.tyrival.enums;
  * @Why:
  */
 public enum HttpMethodEnum {
-    GET(1,"GET"),
-    POST(2,"POST"),
-    PUT(3,"PUT"),
-    DELETE(4,"DELETE");
+    GET(1, "GET"),
+    POST(2, "POST"),
+    PUT(3, "PUT"),
+    DELETE(4, "DELETE");
 
     private int code;
     private String msg;

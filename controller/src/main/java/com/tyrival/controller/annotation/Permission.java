@@ -1,11 +1,11 @@
-package com.tyrival.annotation;
+package com.tyrival.controller.annotation;
 
 import java.lang.annotation.*;
 
 /**
- * @Description: 用在Controller层的接口方法上，用于表示访问该接口所需的权限
+ * @Description: 服务权限注解
  * @Author: Zhou Chenyu
- * @Date: 2018/6/15
+ * @Date: 2018/6/23
  * @Version: V1.0
  * @Modified By:
  * @Modified Date:
@@ -15,5 +15,4 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Permission {
-    public String value();
 }

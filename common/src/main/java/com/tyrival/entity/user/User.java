@@ -31,7 +31,7 @@ public class User implements Serializable {
     private String password;
 
     /**
-     * 账号状态 {@link com.tyrival.enums.user.UserStateEnum }
+     * 账号状态 {@link UserStateEnum }
      */
     private UserStateEnum userStateEnum;
 

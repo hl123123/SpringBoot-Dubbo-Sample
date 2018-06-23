@@ -2,6 +2,8 @@ package com.tyrival.controller.user;
 
 import com.alibaba.dubbo.common.utils.StringUtils;
 import com.alibaba.dubbo.config.annotation.Reference;
+import com.tyrival.controller.annotation.Log;
+import com.tyrival.controller.annotation.Permission;
 import com.tyrival.entity.base.*;
 import com.tyrival.common.redis.RedisService;
 import com.tyrival.common.user.UserService;
@@ -38,12 +40,15 @@ public class UserControllerImpl implements UserController {
     private long sessionExpireTime;
 
     @Override
+    @Log("insert")
+    @Permission
     public Result create(HttpServletRequest request, HttpServletResponse response, User user) {
         user = userService.create(user);
         return new Result(user);
     }
 
     @Override
+    @Log("query")
     public Result list(HttpServletRequest request, HttpServletResponse response, QueryParam queryParam) {
         List<User> list = userService.list(queryParam);
         return new Result(list);

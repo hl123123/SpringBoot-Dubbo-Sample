@@ -1,7 +1,6 @@
 package com.tyrival.controller.user;
 
-import com.tyrival.annotation.Login;
-import com.tyrival.annotation.Permission;
+import com.tyrival.controller.annotation.Log;
 import com.tyrival.entity.base.*;
 import com.tyrival.entity.param.QueryParam;
 import com.tyrival.entity.user.User;
@@ -21,6 +20,7 @@ import java.util.List;
  * @Why:
  */
 @RestController
+@RequestMapping("/user")
 public interface UserController {
 
     /**
@@ -40,8 +40,6 @@ public interface UserController {
      * @return 查询用户列表的结果
      */
     @GetMapping("/list")
-    @Login
-    @Permission("user:query")
     Result<List<User>> list(HttpServletRequest httpReq, HttpServletResponse httpRsp, QueryParam param);
 
     /**
@@ -52,8 +50,6 @@ public interface UserController {
      * @return 查询用户列表的结果
      */
     @GetMapping("/list_by_page")
-    @Login
-    @Permission("user:query")
     Result<List<User>> listByPage(HttpServletRequest httpReq, HttpServletResponse httpRsp, QueryParam param);
 
 }
