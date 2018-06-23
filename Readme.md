@@ -958,7 +958,7 @@ public class PermissionAspect {
 public class UserControllerImpl implements UserController {
     
     // 记录为insert类日志，@Permission表示需要验证权限
-	@Override
+    @Override
     @Log("insert")
     @Permission
     public Result create(HttpServletRequest request, HttpServletResponse response, User user) {
