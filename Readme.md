@@ -6,10 +6,10 @@
 - Spring Boot 2.0.3
 - Dubbo
 - Redis
-
 - Mybatis及分页插件PageHelper
 - Interceptor
 - 自定义注解和AOP（包括日志记录和权限管理）
+- Solr的部署和开发
 
 项目可以手工或利用Jenkins等自动化工具进行部署。在用Maven对各模块进行编译时，在命令行最后加上`-P 参数`，可在编译时引入不同的Spring Boot配置文件，从而对各类环境进行区分，参数包括开发环境`dev`和生产环境`prod`，不加参数默认`dev`。
 
@@ -622,7 +622,7 @@ logging.file=tyrival-log/user-log.log
 
 # 数据源
 spring.datasource.driverClassName = org.postgresql.Driver
-spring.datasource.url = jdbc:postgresql://10.211.55.14:5432/postgres?useUnicode=true&characterEncoding=utf-8
+spring.datasource.url = jdbc:postgresql://192.168.0.179:5432/postgres?useUnicode=true&characterEncoding=utf-8
 spring.datasource.username = postgres
 spring.datasource.password = 123
 
@@ -985,4 +985,347 @@ public class UserControllerImpl implements UserController {
 
 
 
-### 
+## 5. Solr
+
+### 5.1 准备
+- 下载工程solr-7.4.0.zip（不带src的），解压缩。下载地址：http://lucene.apache.org/solr/
+- 创建目录`~/Documents/Workspace/Docker/Solr`，用来存储solr的所有cores
+- 将工程`solr-7.4.0/server/solr`下所有文件，复制到刚创建的`~/Documents/Workspace/Docker/Solr`中
+
+```bash
+# 下载镜像solr:7.4.0，此版本需要和之前下载的工程版本保持一致
+$ docker pull solr
+
+# 已经下载过的镜像，可以通过以下代码查看版本
+# Config.ENV = [...SOLR_VERSION=7.4.0...]
+$ docker image inspect solr 
+```
+
+
+
+### 5.2 创建容器
+
+```bash
+# --name 命名容器名称
+# -v 将本地的文件夹挂载到容器内的文件夹，使solr的所有cores储存到本地目录
+# -p 将本地端口映射到容器端口
+$ docker run --privileged=true --name solr  -v ~/Documents/Workspace/Docker/Solr:/opt/solr/server/solr -d -p 8983:8983 -t solr
+```
+
+
+
+### 5.3 创建core
+
+```bash
+# 在name=solr的容器中，创建core=tyrival
+$ docker exec -it --user=solr solr bin/solr create_core -c tyrival
+
+# 此时在`~/Documents/Workspace/Docker/Solr`中可以看到多了tyrival文件夹，即新建的core
+# 在浏览器中访问http://localhost:8983/solr，会显示Solr Admin界面
+# 在左侧菜单的Core Selector中选择tyrival，可以看到core=tyrival的信息
+```
+
+
+
+### 5.4 配置
+
+- 下载postgres的驱动，此处用postgresql-42.2.2.jar，复制到`~/Documents/Workspace/Docker/Solr/lib`中
+- 将工程`solr-7.4.0/example/example-DIH/solr/db/conf/db-data-config.xml`，复制到`~/Documents/Workspace/Docker/Solr/conf`中，并编辑此文件
+```xml
+<dataConfig>
+    <!-- 数据库驱动，地址，用户名，密码 -->
+    <dataSource type="JdbcDataSource"
+                driver="org.postgresql.Driver"
+                url="jdbc:postgresql://192.168.0.179:5432/postgres"
+                user="postgres"
+                password="123"/>
+
+    <document>
+        <!-- 索引country表 -->
+        <entity name="country" query="select * from COUNTRY" />
+    </document>
+</dataConfig>
+```
+
+
+- 在数据库建表
+
+```sql
+create table country
+(
+  id        integer     not null  constraint country_pkey primary key,
+  name      varchar(50) not null,
+  name_en   varchar(100),
+  continent varchar(50)
+);
+
+comment on table country
+is '国家表';
+
+create unique index country_id_uindex
+  on country (id);
+
+insert into country (id, name, name_en, continent) values (1, '中华人民共和国', 'Republic of China', '亚洲')
+insert into country (id, name, name_en, continent) values (2, '大不列颠及北爱尔兰联合王国', 'United Kingdom of Great Britain and Northern Ireland', '欧洲')
+insert into country (id, name, name_en, continent) values (3, '德意志联邦共和国', 'Federal Republic of Germany', '欧洲')
+insert into country (id, name, name_en, continent) values (4, '朝鲜民主主义人民共和国', 'Democratic People''s Republic of Ko-rea', '亚洲')
+insert into country (id, name, name_en, continent) values (5, '法兰西共和国', 'French Republic', '欧洲')
+```
+
+
+
+- 编辑`~/Documents/Workspace/Docker/Solr/conf/solrconfig.xml`，设置DataImportHandler
+```xml
+<!-- 如果出现问题，就尝试把/dataimport写在/select之前 -->
+<requestHandler name="/dataimport" class="solr.DataImportHandler">
+<lst name="defaults">
+  <str name="config">db-data-config.xml</str>
+</lst>
+</requestHandler>
+
+<requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <int name="rows">10</int>
+```
+
+
+- 重启Solr
+```bash
+$ docker container stop [solr container id]
+$ docker container start [solr container id]
+```
+
+
+- 浏览器打开`http://localhost:8983/solr`，进入Solr Admin，左侧菜单Core Selector选择tyrival，然后选择Schema功能
+- 点击右侧页面左上方的Add Field按钮，添加country表的name列
+
+```
+name: name
+## 此处需要注意，如果选择text_general等类型，会导致后面查询结果时，name的值为数组，而不是字符串
+## 会造成查询结果解析时报BindingException异常
+field type: string
+default: ''
+stored: 选中
+indexed: 选中
+```
+
+同样的方法添加name_en和continent列，然后可以在`~/Documents/Workspace/Docker/Solr/conf/managed_schema`中看到如下内容：
+
+```xml
+<field name="continent" type="string" indexed="true" stored="true"/>
+<field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
+<field name="name" type="string" indexed="true" stored="true"/>
+<field name="name_en" type="string" indexed="true" stored="true"/>
+```
+
+
+
+- 此处如果主键名不是id，需要进行以下修改
+
+```xml
+<!-- 将id修改为主键名 -->
+<uniqueKey>id</uniqueKey>
+
+<!-- 改为required="false" -->
+<field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
+```
+
+
+
+- 重启Solr
+- 刷新Solr Admin页面，左侧选择core=tyrival，选DataImport菜单，进入数据导入页面
+- 在数据导入页选全部导入Command=full-import，选择Entity=country，点击Execute，刷新页面，直到右侧出现绿色提示后，表示导入成功
+
+```
+Indexing completed. Added/Updated: 5 documents. Deleted 0 documents.
+Requests: 1 , Fetched: 5 , Skipped: 0 , Processed: 5 
+Started: less than a minute ago
+```
+
+
+
+- 点击左侧菜单Query，进入查询页面，输入q=name_en:republic，点击Execute Query进行查询，可以查到相应的记录。
+
+```json
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":49,
+    "params":{
+      "q":"name:*共和国*",
+      "_":"1530684926303"}},
+  "response":{"numFound":4,"start":0,"docs":[
+      {
+        "continent":"亚洲",
+        "name":"中华人民共和国",
+        "id":"1",
+        "name_en":"Republic of China",
+        "_version_":1605039455213715456},
+      {
+        "continent":"欧洲",
+        "name":"德意志联邦共和国",
+        "id":"3",
+        "name_en":"Federal Republic of Germany",
+        "_version_":1605039455262998528},
+      {
+        "continent":"亚洲",
+        "name":"朝鲜民主主义人民共和国",
+        "id":"4",
+        "name_en":"Democratic People's Republic of Ko-rea",
+        "_version_":1605039455264047104},
+      {
+        "continent":"欧洲",
+        "name":"法兰西共和国",
+        "id":"5",
+        "name_en":"French Republic",
+        "_version_":1605039455265095680}]
+  }}
+```
+
+
+
+### 5.5 开发
+
+当solr部署完成后，可以进行二次开发，实现远程调用Solr应用，实现业务功能和solr引擎解耦，开发过程和user模块相似。
+
+#### 5.5.1 新建模块
+
+新建solr模块，并在根pom.xml中增加solr模块
+
+```xml
+<modules>
+	...
+	<module>solr</module>
+</modules>
+```
+
+
+
+#### 5.5.2 pom.xml
+
+参考user模块的pom.xml修改，继承根pom.xml，并引入spring-boot-starter-data-solr
+
+```xml
+<dependencies>
+    <!-- solr -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-solr</artifactId>
+    </dependency>
+</dependencies>
+```
+
+
+
+#### 5.5.3 application.properties
+
+配置文件中增加solr应用的访问地址，最后加上core名称tyrival，工程中实际配置在开发环境配置文件`application-dev.properties`中
+
+```properties
+## solr 服务器
+spring.data.solr.host=http://127.0.0.1:8983/solr/tyrival
+```
+
+
+
+#### 5.5.4 Country.java
+
+在common模块中创建实体时，必须加注解
+
+- 类加@SolrDocument注解，solrCoreName的值为core名称，即tyrival
+- 属性加@Field注解，如果表字段名与属性名不同，在@Field内标注表名
+- 主键属性加@Id注解
+
+```java
+package com.tyrival.entity.country;
+
+import org.apache.solr.client.solrj.beans.Field;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.solr.core.mapping.Indexed;
+import org.springframework.data.solr.core.mapping.SolrDocument;
+
+import java.io.Serializable;
+
+@SolrDocument(solrCoreName = "tyrival")
+public class Country implements Serializable {
+
+    /**
+     * id
+     */
+    @Id
+    @Field("id")
+    private String id;
+
+    /**
+     * 名称
+     */
+    @Field("name")
+    @Indexed
+    private String name;
+
+    /**
+     * 英文名
+     */
+    @Field("name_en")
+    @Indexed
+    private String nameEn;
+
+    /**
+     * 所在州
+     */
+    @Field("continent")
+    @Indexed
+    private String continent;
+    
+    /* getter & setter */
+}
+```
+
+
+
+#### 5.5.5 CountryServiceImpl.java
+
+- 记得类要加@com.alibaba.dubbo.config.annotation.Service和@org.springframework.stereotype.Service注解
+- SolrClient会被框架自动示例化注入
+
+```java
+@Service
+@org.springframework.stereotype.Service
+public class CountryServiceImpl implements CountryService {
+
+    @Autowired
+    private SolrClient client;
+
+    @Override
+    public List<Country> listByPage(QueryParam queryParam) {
+        SolrQuery query = new SolrQuery();
+        int pageIndex = queryParam.getPage().getPageIndex();
+        int pageSize = queryParam.getPage().getPageSize();
+        // 这里设置的是从第几条数据开始，而不是从第几页开始
+        query.setStart((pageIndex - 1) * pageSize);
+        query.setRows(pageSize);
+        StringBuffer buffer = new StringBuffer();
+        Object name = queryParam.getConditions().get("name");
+        if (name != null && StringUtils.isNotBlank(name.toString())) {
+        	// 此处需要在关键字两边加*号
+            buffer.append("name:").append("*").append(name.toString()).append("*");
+        } else {
+            buffer.append("*:*");
+        }
+        query.set("q", buffer.toString());
+        QueryResponse response = null;
+        try {
+            response = client.query(query);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        // 如果之前在solr配置schema时，选择的type与Country类的属性类型不匹配的话
+        // 这里会报BindingException异常，因为查询出的属性值会是一个数组，而不是一个基本类型
+        List<Country> list = response.getBeans(Country.class);
+        return list;
+    }
+}
+```
+

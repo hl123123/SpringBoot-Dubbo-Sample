@@ -21,3 +21,4 @@ is '密码';
 comment on column users.user_state
 is '状态';
 
+insert into users (id, account, password, user_state) values (1, 'admin', '123', 1)

@@ -32,7 +32,7 @@ public class UserControllerImpl implements UserController {
     @Reference
     private UserService userService;
 
-    @Reference(version = "1.0.0")
+    @Reference
     private RedisService redisService;
 
     /** Session有效时间 */

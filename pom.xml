@@ -118,6 +118,7 @@
     <!-- 引入各模块 -->
     <modules>
         <module>user</module>
+        <module>solr</module>
         <module>redis</module>
         <module>controller</module>
         <module>common</module>
