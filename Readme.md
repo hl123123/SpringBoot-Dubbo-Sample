@@ -10,6 +10,7 @@
 - Interceptor
 - 自定义注解和AOP（包括日志记录和权限管理）
 - Solr的部署和开发
+- Elasticsearch的部署和开发
 
 项目可以手工或利用Jenkins等自动化工具进行部署。在用Maven对各模块进行编译时，在命令行最后加上`-P 参数`，可在编译时引入不同的Spring Boot配置文件，从而对各类环境进行区分，参数包括开发环境`dev`和生产环境`prod`，不加参数默认`dev`。
 
@@ -1003,7 +1004,7 @@ $ docker image inspect solr
 
 
 
-### 5.2 创建容器
+### 5.2 容器部署
 
 ```bash
 # --name 命名容器名称
@@ -1329,3 +1330,363 @@ public class CountryServiceImpl implements CountryService {
 }
 ```
 
+
+
+## 6. Elasticsearch
+
+### 6.1 准备
+
+- 创建目录`~/Documents/Workspace/Docker/Elastic`，其中创建config、data、plugins三个文件夹，分别用来储存配置文件、数据、插件
+- 在config文件夹中创建配置文件elasticsearch.yml，只需要配置一个参数
+
+```yml
+network.host: 0.0.0.0
+```
+
+
+
+- elasticsearch.yml基本配置参数
+
+```yml
+cluster.name: elasticsearch
+配置es的集群名称，默认是elasticsearch，es会自动发现在同一网段下的es，如果在同一网段下有多个集群，就可以用这个属性来区分不同的集群。
+node.name: "Franz Kafka"
+节点名，默认随机指定一个name列表中名字，该列表在es的jar包中config文件夹里name.txt文件中，其中有很多作者添加的有趣名字。
+node.master: true
+指定该节点是否有资格被选举成为node，默认是true，es是默认集群中的第一台机器为master，如果这台机挂了就会重新选举master。
+node.data: true
+指定该节点是否存储索引数据，默认为true。
+index.number_of_shards: 5
+设置默认索引分片个数，默认为5片。
+index.number_of_replicas: 1
+设置默认索引副本个数，默认为1个副本。
+path.conf: /path/to/conf
+设置配置文件的存储路径，默认是es根目录下的config文件夹。
+path.data: /path/to/data
+设置索引数据的存储路径，默认是es根目录下的data文件夹，可以设置多个存储路径，用逗号隔开，例：
+path.data: /path/to/data1,/path/to/data2
+path.work: /path/to/work
+设置临时文件的存储路径，默认是es根目录下的work文件夹。
+path.logs: /path/to/logs
+设置日志文件的存储路径，默认是es根目录下的logs文件夹
+path.plugins: /path/to/plugins
+设置插件的存放路径，默认是es根目录下的plugins文件夹
+bootstrap.mlockall: true
+设置为true来锁住内存。因为当jvm开始swapping时es的效率会降低，所以要保证它不swap，可以把ES_MIN_MEM和 ES_MAX_MEM两个环境变量设置成同一个值，并且保证机器有足够的内存分配给es。同时也要允许elasticsearch的进程可以锁住内存，linux下可以通过`ulimit -l unlimited`命令。
+network.bind_host: 192.168.0.1
+设置绑定的ip地址，可以是ipv4或ipv6的，默认为0.0.0.0。 
+network.publish_host: 192.168.0.1
+设置其它节点和该节点交互的ip地址，如果不设置它会自动判断，值必须是个真实的ip地址。
+network.host: 192.168.0.1
+这个参数是用来同时设置bind_host和publish_host上面两个参数。
+transport.tcp.port: 9300
+设置节点间交互的tcp端口，默认是9300。
+transport.tcp.compress: true
+设置是否压缩tcp传输时的数据，默认为false，不压缩。
+http.port: 9200
+设置对外服务的http端口，默认为9200。
+http.max_content_length: 100mb
+设置内容的最大容量，默认100mb
+http.enabled: false
+是否使用http协议对外提供服务，默认为true，开启。
+gateway.type: local
+gateway的类型，默认为local即为本地文件系统，可以设置为本地文件系统，分布式文件系统，Hadoop的HDFS，和amazon的s3服务器。
+gateway.recover_after_nodes: 1
+设置集群中N个节点启动时进行数据恢复，默认为1。
+gateway.recover_after_time: 5m
+设置初始化数据恢复进程的超时时间，默认是5分钟。
+gateway.expected_nodes: 2
+设置这个集群中节点的数量，默认为2，一旦这N个节点启动，就会立即进行数据恢复。
+cluster.routing.allocation.node_initial_primaries_recoveries: 4
+初始化数据恢复时，并发恢复线程的个数，默认为4。
+cluster.routing.allocation.node_concurrent_recoveries: 2
+添加删除节点或负载均衡时并发恢复线程的个数，默认为4。
+indices.recovery.max_size_per_sec: 0
+设置数据恢复时限制的带宽，如入100mb，默认为0，即无限制。
+indices.recovery.concurrent_streams: 5
+设置这个参数来限制从其它分片恢复数据时最大同时打开并发流的个数，默认为5。
+discovery.zen.minimum_master_nodes: 1
+设置这个参数来保证集群中的节点可以知道其它N个有master资格的节点。默认为1，对于大的集群来说，可以设置大一点的值（2-4）
+discovery.zen.ping.timeout: 3s
+设置集群中自动发现其它节点时ping连接超时时间，默认为3秒，对于比较差的网络环境可以高点的值来防止自动发现时出错。
+discovery.zen.ping.multicast.enabled: false
+设置是否打开多播发现节点，默认是true。
+discovery.zen.ping.unicast.hosts: ["host1", "host2:port", "host3[portX-portY]"]
+设置集群中master节点的初始列表，可以通过这些节点来自动发现新加入集群的节点。
+下面是一些查询时的慢日志参数设置
+index.search.slowlog.level: TRACE
+index.search.slowlog.threshold.query.warn: 10s
+index.search.slowlog.threshold.query.info: 5s
+index.search.slowlog.threshold.query.debug: 2s
+index.search.slowlog.threshold.query.trace: 500ms
+index.search.slowlog.threshold.fetch.warn: 1s
+index.search.slowlog.threshold.fetch.info: 800ms
+index.search.slowlog.threshold.fetch.debug:500ms
+index.search.slowlog.threshold.fetch.trace: 200ms
+```
+
+
+
+### 6.2 容器部署
+
+#### 6.2.1 创建容器
+
+```bash
+# -e "cluster.name=elasticsearch" 集群名称，相同名称的节点会进入同一集群
+# -e "node.name=elas" 节点名称，相同集群中节点名称保持唯一
+# -v 将配置文件、数据、插件挂载到容器中，使其保存在Docker外
+$ docker run -d -p 9200:9200 -p 9300:9300 --name elas -e "cluster.name=elasticsearch" -e "node.name=elas" -v ~/Documents/Workspace/Docker/Elastic/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml -v ~/Documents/Workspace/Docker/Elastic/data:/usr/share/elasticsearch/data -v ~/Documents/Workspace/Docker/Elastic/plugins:/usr/share/elasticsearch/plugins docker.elastic.co/elasticsearch/elasticsearch:6.3.0
+```
+
+
+
+#### 6.2.2 安装插件
+
+```bash
+### 进入容器
+$ docker exec -it elas /bin/bash
+
+### 安装分词插件
+# ./bin/elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.0/elasticsearch-analysis-ik-6.3.0.zip
+
+### 下面两个插件，如果不将本地plugins文件夹挂载到容器中，是会自动生成的，现在需手工安装
+# ./bin/elasticsearch-plugin install ingest-geoip
+# ./bin/elasticsearch-plugin install ingest-user-agent
+
+### 查看插件，三个插件安装完成
+# ls plugins/
+analysis-ik  ingest-geoip  ingest-user-agent
+```
+
+
+
+#### 6.2.3 常用命令
+
+Elasticsearch是通过http请求进行操作的，常用指令如下
+
+```bash
+###### Elasticsearch6.x 对content-type验证采用了严格模式，不加--header会报错 
+###### Content-Type header [application/x-www-form-urlencoded] is not supported
+
+# 创建index=accounts，其中包括一个type=person，
+# person包含三个字段，user，title，desc，都启用了ik分词插件
+$ curl --header "content-type: application/JSON" -X PUT 'localhost:9200/accounts' -d '
+{
+  "mappings": {
+    "person": {
+      "properties": {
+        "user": {
+          "type": "text",
+          "analyzer": "ik_max_word",
+          "search_analyzer": "ik_max_word"
+        },
+        "title": {
+          "type": "text",
+          "analyzer": "ik_max_word",
+          "search_analyzer": "ik_max_word"
+        },
+        "desc": {
+          "type": "text",
+          "analyzer": "ik_max_word",
+          "search_analyzer": "ik_max_word"
+        }
+      }
+    }
+  }
+}'
+
+# 查看所有index
+$ curl -X GET 'http://localhost:9200/_cat/indices?v'
+
+# 删除index=accounts
+$ curl -X DELETE 'localhost:9200/accounts'
+
+
+# 在index=person创建id为1的一条记录，包括三个属性
+# 此时如果index=accounts不存在，会自动创建
+# PUT操作必须指定id，与post不同
+$ curl --header "content-type: application/JSON" -X PUT 'localhost:9200/accounts/person/1?pretty' -d '
+{
+  "user": "张三",
+  "title": "工程师",
+  "desc": "数据库管理"
+}' 
+
+# POST时可以不指定id，有系统自动生成
+$ curl -X POST 'localhost:9200/accounts/person' -d '
+{
+  "user": "李四",
+  "title": "工程师",
+  "desc": "系统管理"
+}'
+
+# 查看type=person中id为1的记录
+$ curl 'localhost:9200/accounts/person/1?pretty'
+
+# 删除type=person中id=1的记录
+$ curl -X DELETE 'localhost:9200/accounts/person/1'
+
+# 查询所有记录
+$ curl 'localhost:9200/accounts/person/_search?pretty=true'
+
+# 查询满足desc包含‘管理’的记录
+$ curl --header "content-type: application/JSON" 'localhost:9200/accounts/person/_search?pretty'  -d '
+{
+  "query" : { "match" : { "desc" : "管理" }},
+  "from": 1,
+  "size": 1
+}'
+
+# 多个关键词用空格分开，表示OR
+$ curl --header "content-type: application/JSON" 'localhost:9200/accounts/person/_search?pretty'  -d '
+{
+  "query" : { "match" : { "desc" : "数据库 系统" }}
+}'
+
+# 以下写法表示AND
+$ curl --header "content-type: application/JSON" 'localhost:9200/accounts/person/_search?pretty'  -d '
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "desc": "数据库" } },
+        { "match": { "desc": "系统" } }
+      ]
+    }
+  }
+}'
+```
+
+
+
+### 6.3 开发
+
+#### 6.3.1 模块
+
+与solr类似，创建模块，创建相应的接口、配置文件等。
+
+
+
+#### 6.3.2 pom.xml
+
+参考solr模块的pom.xml，区别在于依赖如下
+
+```xml
+<dependencies>
+
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-elasticsearch</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+
+    </dependencies>
+```
+
+
+
+#### 6.3.3 application.properties
+
+配置文件与solr类似，区别在于把solr的配置项换成elastic的
+
+```properties
+## Elastic
+# 节点名字，默认elasticsearch
+spring.data.elasticsearch.cluster-name=elasticsearch
+# 节点地址，多个节点用逗号隔开
+spring.data.elasticsearch.cluster-nodes=127.0.0.1:9300
+# spring.data.elasticsearch.local=false
+spring.data.elasticsearch.repositories.enable=true
+```
+
+
+
+#### 6.3.4 ArticleRepository.java
+
+ArticleRepository相当于通常意义上的DAO层，用来与数据库直接进行交互
+
+```java
+import com.tyrival.entity.article.Article;
+import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.stereotype.Component;
+
+@Component
+public interface ArticleRepository extends ElasticsearchRepository<Article, Long> {
+}
+```
+
+
+
+#### 6.3.5 ArticleServiceImpl.java
+
+Service层直接调用articleRepository进行数据的操作，并将服务注册到Zookeeper
+
+```java
+import com.alibaba.dubbo.config.annotation.Service;
+import com.tyrival.common.article.ArticleService;
+import com.tyrival.elastic.repo.ArticleRepository;
+import com.tyrival.entity.article.Article;
+import org.elasticsearch.index.query.QueryStringQueryBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+@Service
+@org.springframework.stereotype.Service
+public class ArticleServiceImpl implements ArticleService {
+
+    @Autowired
+    private ArticleRepository articleRepository;
+
+    @Override
+    public void create(Article article) {
+        articleRepository.save(article);
+    }
+
+    @Override
+    public void delete(Article article) {
+        articleRepository.delete(article);
+    }
+
+    @Override
+    public List<Article> list(String keyword) {
+        QueryStringQueryBuilder builder = new QueryStringQueryBuilder(keyword);
+        Iterable<Article> searchResult = articleRepository.search(builder);
+        List<Article> list = new ArrayList<>();
+        for (Iterator iter = searchResult.iterator(); iter.hasNext();) {
+            list.add((Article) iter.next());
+        }
+        return list;
+    }
+}
+```
+
+
+
+#### 

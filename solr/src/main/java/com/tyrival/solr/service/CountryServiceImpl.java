@@ -4,18 +4,12 @@ import com.alibaba.dubbo.config.annotation.Service;
 import com.tyrival.common.country.CountryService;
 import com.tyrival.entity.country.Country;
 import com.tyrival.entity.param.QueryParam;
-import com.tyrival.solr.repo.CountryRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,9 +24,6 @@ import java.util.List;
 @Service
 @org.springframework.stereotype.Service
 public class CountryServiceImpl implements CountryService {
-
-    @Autowired
-    private CountryRepository countryRepository;
 
     @Autowired
     private SolrClient client;
