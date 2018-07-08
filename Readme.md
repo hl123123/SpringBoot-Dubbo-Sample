@@ -11,6 +11,7 @@
 - 自定义注解和AOP（包括日志记录和权限管理）
 - Solr的部署和开发
 - Elasticsearch的部署和开发
+- Tesseract ocr的安装和开发
 
 项目可以手工或利用Jenkins等自动化工具进行部署。在用Maven对各模块进行编译时，在命令行最后加上`-P 参数`，可在编译时引入不同的Spring Boot配置文件，从而对各类环境进行区分，参数包括开发环境`dev`和生产环境`prod`，不加参数默认`dev`。
 
@@ -1689,4 +1690,142 @@ public class ArticleServiceImpl implements ArticleService {
 
 
 
-#### 
+## 7. Tesseract
+
+### 7.1 准备
+
+- 安装Tesseract，安装方法：https://github.com/tesseract-ocr/tesseract/wiki
+- 下载官方的训练库，里面包含许多语言，这里只需要简体中文chi_sim.traineddata，下载地址：https://github.com/tesseract-ocr/tessdata
+
+
+
+### 7.2 pom.xml
+
+最重要的是下面这个Tess4j，
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>net.sourceforge.tess4j</groupId>
+        <artifactId>tess4j</artifactId>
+        <version>4.0.2</version>
+    </dependency>
+<dependencies>
+```
+
+
+
+### 7.3 Tessdata
+
+将第一步中下载的chi_sim.traineddata放在/src/main/resources/tessdata中，作为当前工程的训练库，基本可以识别大部分印刷体中文。如果有个性化的需求，例如艺术字、手写稿等，可以在网上搜索训练方法，非常简单，基本就是通过命令行加载并识别稿件，并对成果进行手工校准，校准完成之后就能形成个性化的训练库。
+
+
+
+### 7.4 application.properties
+
+```properties
+# 设置训练库的路径，即在resources中的文件夹名
+tess.data=tessdata
+```
+
+
+
+### 7.4 OcrServiceImpl.java
+
+```java
+import com.alibaba.dubbo.config.annotation.Service;
+import com.tyrival.common.ocr.OcrService;
+import com.tyrival.ocr.utils.ExcelUtil;
+import com.tyrival.ocr.utils.FileUtil;
+import com.tyrival.ocr.utils.OcrUtil;
+import com.tyrival.ocr.utils.WordUtil;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.ClassUtils;
+
+@Service
+@org.springframework.stereotype.Service
+public class OcrServiceImpl implements OcrService {
+
+	// application.properties中设置的tessData注入
+    @Value("${tess.data}")
+    private String tessData;
+
+    @Override
+    public String doOCR(String filePath) throws Exception {
+        // word文件用poi读取
+        if (FileUtil.isWord(filePath)) {
+            return WordUtil.read(filePath);
+        }
+        // excel文件用poi读取
+        if (FileUtil.isExcel(filePath)) {
+            return ExcelUtil.read(filePath);
+        }
+        // 其他文件ocr，例如图片、pdf等
+        String result = OcrUtil.doOCR(filePath, this.getTessData());
+        return result;
+    }
+
+    private String getTessData() {
+        return ClassUtils.getDefaultClassLoader().getResource("").getPath() + tessData;
+    }
+}
+```
+
+
+
+### 7.5 OrcUtil.java
+
+```java
+package com.tyrival.ocr.utils;
+
+import net.sourceforge.tess4j.ITesseract;
+import net.sourceforge.tess4j.Tesseract;
+import net.sourceforge.tess4j.TesseractException;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+
+public class OcrUtil {
+
+    private final static String CHINESE = "chi_sim";
+    private final static String ENGLISH = "eng";
+
+    private static ITesseract instance;
+
+    public static String doOCR(String filePath, String tessData) throws TesseractException, FileNotFoundException {
+        return doOCR(filePath, tessData, CHINESE);
+    }
+
+    /* 过程非常简单 */
+    public static String doOCR(String filePath, String tessData, String language) throws TesseractException, FileNotFoundException {
+
+        ITesseract instance = getTesseract();
+        File file = new File(filePath);
+        if (!file.isFile()) {
+            throw new FileNotFoundException("未找到 " + filePath + " 文件");
+        }
+        
+        // tessdata文件夹默认位置是工程根目录下/tessdata，即与/src目录同级
+        // 此处我们放在resources下，所以要进行手工设置datapath
+        instance.setDatapath(tessData);
+        instance.setLanguage(language);
+        String result = instance.doOCR(file);
+        return result;
+    }
+
+    private static ITesseract getTesseract() {
+        if (instance == null) {
+            instance = new Tesseract();
+        }
+        return instance;
+    }
+}
+```
+
+
+
+### 7.6 问题
+
+在MacOS下运行工程，如果通过controller模块中的`/ocr/do`接口运行，在识别过程中会崩溃，错误日志反应似乎是和dubbo有冲突，Windows和Linux还没测试，不知道是不是MacOS特有的。
+
+解决办法：直接在ocr模块中建立controller，直接访问本模块的service，不通过dubbo进行远程调度，就不会出现这个问题。

@@ -117,6 +117,7 @@
 
     <!-- 引入各模块 -->
     <modules>
+        <module>ocr</module>
         <module>elastic</module>
         <module>user</module>
         <module>solr</module>
